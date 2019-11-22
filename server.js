@@ -2,10 +2,9 @@ const { ApolloServer, gql } = require('apollo-server');
 var mongoose = require('mongoose');
 var jwt = require('jsonwebtoken');
 var User = require('./models/user');
+require('dotenv').config();
 
-mongoose.connect('mongodb://localhost/test', {useNewUrlParser: true});
-
-const PRIVATE_KEY = "SOMEPRIVATEKEY";
+mongoose.connect(process.env.MONGODB_URI + process.env.DATABASE, {useNewUrlParser: true});
 
 // Construct a schema, using GraphQL schema language
 var typeDefs = gql`
@@ -31,7 +30,6 @@ const resolvers  = {
   
       // Verify if user is logged in
       if(!user_id) throw new Error("You're not authenticated");
-      console.log(await User.findById(user_id));
       return await User.findById(user_id);
     }
   },
@@ -47,7 +45,7 @@ const resolvers  = {
   
       //TODO: Catch error dealing with not unique "email" field
   
-      return jwt.sign(user._id.toString(), PRIVATE_KEY);
+      return jwt.sign(user._id.toString(), process.env.PRIVATE_KEY);
     },
     login: async (_, args, context) => {
       var {email, password} = args;
@@ -60,19 +58,18 @@ const resolvers  = {
   
       if (!isMatch) throw new Error("Invalid password");
   
-      return jwt.sign(user._id.toString(), PRIVATE_KEY);
+      return jwt.sign(user._id.toString(), process.env.PRIVATE_KEY);
     }
   }
 };
 
 var context = ({req}) => {
-  console.log(req.headers.authorization);
   const tokenWithBearer = req.headers.authorization || '';
   const token = tokenWithBearer.split(' ')[1];
   var user_id = null;
   try {
     if (token) {
-      user_id = jwt.verify(token, PRIVATE_KEY);
+      user_id = jwt.verify(token, process.env.PRIVATE_KEY);
     }
   } catch (err) {
     throw err;
