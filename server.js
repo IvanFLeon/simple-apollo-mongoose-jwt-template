@@ -15,10 +15,10 @@ var typeDefs = gql`
   }
   type Query {
     me: User
+    login (email: String!, password: String!): String
   }
   type Mutation {
     signup (name: String!, email: String!, password: String!): String
-    login (email: String!, password: String!): String
   }
 `;
 
@@ -31,6 +31,19 @@ const resolvers  = {
       // Verify if user is logged in
       if(!user_id) throw new Error("You're not authenticated");
       return await User.findById(user_id);
+    },
+    login: async (_, args, context) => {
+      var {email, password} = args;
+  
+      const user = await User.findOne({email})
+  
+      if (!user) throw new Error("No user registered with this email");
+  
+      var isMatch = await user.comparePassword(password);
+  
+      if (!isMatch) throw new Error("Invalid password");
+  
+      return jwt.sign(user._id.toString(), process.env.PRIVATE_KEY);
     }
   },
   Mutation: {
@@ -44,19 +57,6 @@ const resolvers  = {
       });
   
       //TODO: Catch error dealing with not unique "email" field
-  
-      return jwt.sign(user._id.toString(), process.env.PRIVATE_KEY);
-    },
-    login: async (_, args, context) => {
-      var {email, password} = args;
-  
-      const user = await User.findOne({email})
-  
-      if (!user) throw new Error("No user registered with this email");
-  
-      var isMatch = await user.comparePassword(password);
-  
-      if (!isMatch) throw new Error("Invalid password");
   
       return jwt.sign(user._id.toString(), process.env.PRIVATE_KEY);
     }
