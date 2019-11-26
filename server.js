@@ -1,11 +1,13 @@
 require('dotenv').config();
-const { ApolloServer, gql } = require('apollo-server');
+var { ApolloServer, gql } = require('apollo-server');
 var mongoose = require('mongoose');
 var jwt = require('jsonwebtoken');
 var schema = require('./schema/schema');
 
+//Connect to MonogDB
 mongoose.connect(process.env.MONGODB_URI + process.env.DATABASE, {useNewUrlParser: true});
 
+//Authenticate user
 var context = ({req}) => {
   const tokenWithBearer = req.headers.authorization || '';
   const token = tokenWithBearer.split(' ')[1];
@@ -20,6 +22,7 @@ var context = ({req}) => {
   return {user_id};
 }
 
+//Create and start ApolloServer
 const server = new ApolloServer({schema, context});
 server.listen().then(({ url }) => {
   console.log(`🚀  Server ready at ${url}`);
